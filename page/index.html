@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Activation Approximations and Safety in Aligned LLMs</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <style>
+    :root {
+      --primary-color: #111;
+      --accent-color: #f5f5f5;
+      --text-color: #111;
+      --light-text: #444;
+      --background: #fff;
+      --border-color: #e5e7eb;
+      --shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--background);
+      color: var(--text-color);
+      margin: 0;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: auto;
+      padding: 2rem 1rem;
+    }
+
+    header {
+      text-align: center;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+    }
+
+    .title {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+      font-size: 1.1rem;
+      color: var(--light-text);
+      margin-bottom: 1rem;
+    }
+
+    .authors {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.5rem;
+      font-size: 0.97rem;
+    }
+
+    .author {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .nav-buttons {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .btn {
+      background: #111;
+      color: white;
+      padding: 0.6rem 1.4rem;
+      border-radius: 999px;
+      text-decoration: none;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .btn:hover {
+      background: #333;
+    }
+
+    section {
+      margin-bottom: 2.5rem;
+    }
+
+    .section-card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      padding: 2rem 1.5rem;
+      border: 1px solid var(--border-color);
+    }
+
+    h3 {
+      font-size: 1.3rem;
+      margin-bottom: 1rem;
+      border-left: 4px solid var(--primary-color);
+      padding-left: 0.5rem;
+    }
+
+    p, ul, ol {
+      font-size: 1rem;
+      line-height: 1.6;
+    }
+
+    ul, ol {
+      padding-left: 1.3rem;
+    }
+
+    .img-block img {
+      max-width: 100%;
+      border-radius: 10px;
+      margin: 1rem 0;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .highlight-formula {
+      background-color: #fffbe6;
+      border-left: 4px solid #ffd43b;
+      padding: 0.8rem;
+      margin: 1.5rem 0;
+      font-size: 0.9rem;
+    }
+
+    pre {
+      background: #f5f5f5;
+      padding: 1rem;
+      overflow-x: auto;
+      border-left: 4px solid #ccc;
+      font-family: 'Courier New', monospace;
+    }
+
+    footer {
+      text-align: center;
+      font-size: 0.95rem;
+      padding: 2rem 0 1rem;
+      border-top: 1px solid var(--border-color);
+      color: var(--light-text);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <div class="title">Activation Approximations Can Incur Safety Vulnerabilities Even in Aligned LLMs: Comprehensive Analysis and Defense</div>
+      <div class="subtitle">Usenix Security 2025</div>
+      <div class="authors">
+        <a class="author" href="mailto:kevinzh@zju.edu.cn">Jiawen Zhang<sup>†∗</sup></a>
+        <a class="author" href="mailto:chenkejia@zju.edu.cn">Kejia Chen<sup>†∗</sup></a>
+        <a class="author" href="mailto:lipeng.he@uwaterloo.ca">Lipeng He<sup>§∗</sup></a>
+        <a class="author" href="mailto:louj5@mail.sysu.edu.cn">Jian Lou<sup>‡¶</sup></a>
+        <a class="author" href="mailto:lidan263@mail.sysu.edu.cn">Dan Li<sup>‡</sup></a>
+        <a class="author" href="mailto:zunleifeng@zju.edu.cn">Zunlei Feng<sup>†</sup></a>
+        <a class="author" href="mailto:songml@zju.edu.cn">Mingli Song<sup>†</sup></a>
+        <a class="author" href="mailto:liujian2411@zju.edu.cn">Jian Liu<sup>†¶</sup></a>
+        <a class="author" href="mailto:kuiren@zju.edu.cn">Kui Ren<sup>†</sup></a>
+        <a class="author" href="mailto:yangxh@zju.edu.cn">Xiaohu Yang<sup>†</sup></a>
+      </div>
+      <br>
+      <div style="display: flex; justify-content: center; gap: 2rem; font-size: 0.98rem; margin-bottom: 0.7rem;">
+        <span style="display: flex; align-items: center;">
+            <span class="author1" style="font-size:1.1em; margin-right:0.3em;">&#9654;</span>
+            <span style="color:#111;"><sup>†</sup>Zhejiang University</span>
+        </span>
+        <span style="display: flex; align-items: center;">
+            <span class="author5" style="font-size:1.1em; margin-right:0.3em;">&#9654;</span>
+            <span style="color:#111;"><sup>‡</sup>Sun Yat-sen University</span>
+        </span>
+        <span style="display: flex; align-items: center;">
+            <span class="author6" style="font-size:1.1em; margin-right:0.3em;">&#9654;</span>
+            <span style="color:#111;"><sup>§</sup>University of Waterloo</span>
+        </span>
+    </div>
+      <div class="nav-buttons">
+        <a class="btn" href="https://github.com/Kevin-Zh-CS/QuadA" target="_blank">GitHub</a>
+        <a class="btn" href="https://arxiv.org/pdf/2502.00840" target="_blank">Paper</a>
+      </div>
+    </header>
+
+    <!-- Abstract -->
+    <section>
+      <div class="section-card">
+        <h3>Abstract</h3>
+        <img src="threat_model.png" alt="Threat Model Diagram" style="max-width: 100%; height: auto; margin: 1em 0;">
+        <p>
+            Large Language Models (LLMs) have showcased remarkable capabilities across various domains. Accompanying the evolving capabilities and expanding deployment scenarios of LLMs, their deployment challenges escalate due to their sheer scale and the advanced yet complex activation designs prevalent in notable model series, such as Llama, Gemma, Mistral. These challenges have become particularly pronounced in resource-constrained deployment scenarios, where mitigating inference bottlenecks is imperative. Among various recent efforts, activation approximation has emerged as a promising
+            avenue for pursuing inference efficiency, sometimes considered indispensable in applications such as private inference. Despite achieving substantial speedups with minimal impact on utility, even appearing sound and practical for real-world deployment, the safety implications of activation approximations remain unclear. 
+        </p>   
+        <p>
+            In this work, we fill this critical gap in LLM safety by conducting the first systematic safety evaluation of activation approximations. Our safety vetting spans seven state-of-the-art techniques across three popular categories (activation polynomialization, activation sparsification, and activation quantization), revealing consistent safety degradation across ten safety-aligned LLMs. To overcome the hurdle of devising a unified defense accounting for diverse activation approximation methods, we perform an in-depth analysis of their shared error patterns and uncover three key findings. We propose QuadA, a novel safety enhancement method tailored to mitigate the safety compromises introduced by activation approximations. Extensive experiments and ablation studies corroborate QuadA’s effectiveness in enhancing the safety capabilities of LLMs after activation approximations.
+        </p>
+      </div>
+      
+    </section>
+
+
+
+<div class="section-card">
+   
+
+   <h3>Activation Approximation Taxonomy</h3>
+   <p>
+      Activation approximation techniques aim to accelerate inference by simplifying or compressing the computation of activation functions. This section outlines three representative and widely adopted approximation strategies:
+   </p>
+   <img src="assess.png" alt="Threat Model Diagram" style="max-width: 100%; height: auto; margin: 1.5em 0; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+<ol style="padding-left: 1.2em; line-height: 1.7;">
+   <li>
+      <strong>Activation Polynomialization</strong> &mdash; Approximates complex non-linear activation functions (e.g., GELU, SwiGLU) with piecewise or low-degree polynomials. This is especially crucial in encrypted inference settings (e.g., MPC/FHE), where standard functions are computationally prohibitive. Prominent implementations include <em>Iron</em>, <em>BOLT</em>, <em>BumbleBee</em>, and <em>NEXUS</em>.
+   </li>
+   <li>
+      <strong>Activation Sparsification</strong> &mdash; Leverages the runtime sparsity of activation tensors by zeroing out low-magnitude values, thereby skipping the corresponding computations. This dynamic and input-dependent pruning approach is exemplified by methods such as <em>TEAL</em> and <em>CATS</em>.
+   </li>
+   <li>
+      <strong>Activation Quantization</strong> &mdash; Discretizes high-precision activations (e.g., FP16) into low-bitwidth formats (e.g., INT4/INT8) to reduce both memory footprint and arithmetic overhead. Notable techniques include <em>SmoothQuant</em> and <em>OmniQuant</em>.
+   </li>
+</ol>
+
+<img src="observation.png" alt="Threat Model Diagram" style="max-width: 100%; height: auto; margin: 1.5em 0; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+
+
+   <h3>Key Research Observations</h3>
+   <ul style="padding-left: 1.2em; line-height: 1.7;">
+   <li>
+      <strong>Observation I:</strong> Activation approximations degrade safety <em>before</em> utility, causing large language models to generate coherent but harmful responses to malicious inputs.
+  </li>
+  <li>
+      <strong>Observation II:</strong> Approximation-induced errors in the <em>early layers</em> of the model are significantly more harmful to safety than those in later layers.
+  </li>
+  <li>
+      <strong>Observation III:</strong> Harmful prompt activations form identifiable clusters in latent space, but approximations can shift them toward benign regions, effectively bypassing safety checks.
+  </li>
+  </ul>
+ </div>
+
+
+
+
+    <div class="section-card">
+        <h3>Activation Approximation-Aware Alignment (QuadA)</h3>
+     <p>
+        QuadA is a safety alignment strategy designed to preserve the robustness of LLMs against a wide range of activation approximation techniques. It is seamlessly integrated into the post-training alignment pipeline of LLMs and introduces three targeted algorithmic innovations based on empirical findings:
+     </p>
+     <ol style="line-height: 1.7;">
+         <li><strong>Adversarial Training via Most Vulnerable Approximation (MVA):</strong> Incorporates the empirically derived worst-case approximation perturbation to expose the model to maximal safety degradation during training.</li>
+         <li><strong>Selective Layer Perturbation:</strong> Injects approximation noise only into the early, safety-sensitive transformer layers—identified via constrained optimization—to maximize safety impact while preserving utility.</li>
+         <li><strong>Activation Space Regularization:</strong> Clusters harmful activations by penalizing their dispersion in the latent space, reducing the chance of misclassification as benign after approximation.</li>
+    </ol>
+
+     <h3>QuadA Objective Function</h3>
+     <p>The training objective of QuadA builds upon the Direct Preference Optimization (DPO) loss, augmented with regularization based on cosine similarity in activation space:</p>
+     <!-- <div style="text-align: center; font-family: 'Times New Roman', serif; font-size: 1.1rem; margin: 1.5em 0; background: #f9f9f9; padding: 1em; border-left: 4px solid #007acc;"> -->
+     <p>
+     <!-- <strong>L<sub>QuadA</sub>(θ)</strong> = −E<sub>(x, y<sub>w</sub>, y<sub>l</sub>) ∼ D</sub> log σ [ β log ( π<sup>ε</sup><sub>θ</sub>(y<sub>w</sub>|x) / π<sub>ref</sub>(y<sub>w</sub>|x) ) − β log ( π<sup>ε</sup><sub>θ</sub>(y<sub>l</sub>|x) / π<sub>ref</sub>(y<sub>l</sub>|x) ) ]<br>
+     − λ E<sub>(x<sub>i</sub>, x<sub>j</sub>) ∼ D</sub> cosine( f<sub>θ₁</sub>(T(x<sub>i</sub>)), f<sub>θ₁</sub>(T(x<sub>j</sub>)) ) -->
+     
+     <div class="highlight-formula">
+        $$ 
+        \mathcal{L}_\text{QuadA}(\theta) = -\mathbb{E}_{\mathcal{D}}\log \sigma \left( \beta \log \frac{\pi^{\epsilon}_{\theta}(y_w|x)}{\pi_{\theta_0}(y_w|x)} 
+        - \beta \log \frac{\pi^{\epsilon}_{\theta} (y_l|x)}{\pi_{\theta_0} (y_l|x)} \right) \\ \\
+        -\lambda \;\mathbb{E}_{x_i, x_j\sim \mathcal{D}}
+        \text{cosine}\left(  \boldsymbol{f}_1^{\epsilon_1}(\theta_1|\mathcal{T}(x_i)), \; 
+        \boldsymbol{f}_1^{\epsilon_1}(\theta_1|\mathcal{T}(x_j)) \right)
+        $$
+      </div>
+      <div class="highlight-formula">
+        $$
+        \pi^{\epsilon}_\theta(\cdot|x) = 
+      \underbrace{\boldsymbol{f}_L(\theta_L|\mathbf{e}_{L}) \circ 
+          \dots \circ 
+          \boldsymbol{f}_{\tau+1}(\theta_{\tau+1}|\mathbf{e}_{\tau+1})}_{\text{The last $L-\tau$ layers are not perturbed}} 
+           \quad \underbrace{\circ \; \boldsymbol{f}^{\text{mva}}_\tau(\theta_\tau|\mathbf{e}_\tau)  \circ 
+          \dots \circ \boldsymbol{f}_1^{\text{mva}}(\theta_1|\mathcal{T}(x))}_{\text{The first $\tau$ layers are perturbed with mva}}.
+        $$
+      </div>
+      
+     </p>
+     <!-- </div> -->
+     <p>
+        Since the output of the original safety-aligned model is harmless when there is no activation approximations, we can set it as the reference model \(\pi_\text{ref}=\pi_{\theta_0}\) to ensure that the outputs with activation approximations align with those without.
+    </p>
+
+    
+
+
+    <h3>Empirical Results</h3>
+    <ul style="line-height: 1.7;">
+       <li><strong>Safety Gains:</strong> QuadA significantly reduces attack success rates (ASR) and harmfulness scores (HS) across all tested activation approximation scenarios.</li>
+       <li><strong>Robustness to Adaptive Attacks:</strong> Demonstrated strong resistance against sophisticated jailbreak methods such as AutoDAN, GCG, and DRA.</li>
+       <li><strong>Model Scalability:</strong> Evaluated from 3B to 405B parameter scales, QuadA shows consistent improvements in safety with minimal utility degradation.</li>
+    </ul>
+    <img src="results.png" alt="Threat Model Diagram" style="max-width: 100%; height: auto; margin: 1.5em 0; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+    <!-- <h3>Datasets Used</h3>
+    <ul style="line-height: 1.7;">
+    <li><strong><a href="https://github.com/llm-attacks/llm-attacks" target="_blank">AdvBench</a>:</strong> 520 adversarial prompts used to measure ASR.</li>
+    <li><strong><a href="https://github.com/PKU-Alignment/beavertails" target="_blank">BeaverTails</a>:</strong> 8,210 harmful questions across 14 categories to assess HS.</li>
+    <li><strong><a href="https://huggingface.co/datasets/mikasenghaas/wikitext-2" target="_blank">WikiText-2</a>:</strong> Language modeling benchmark to evaluate PPL.</li>
+    <li><strong><a href="https://huggingface.co/datasets/cais/mmlu" target="_blank">MMLU</a>:</strong> Multitask evaluation to measure general-purpose reasoning and utility.</li>
+    <li><strong><a href="https://huggingface.co/datasets/PKU-Alignment/PKU-SafeRLHF" target="_blank">PKU-SafeRLHF</a>:</strong> 73.9k samples used for safety alignment training under QuadA.</li>
+    <li><strong><a href="https://github.com/tatsu-lab/stanford_alpaca" target="_blank">Alpaca</a>:</strong> Safe instruction-following data for activation clustering and baseline comparison.</li>
+    </ul> -->
+</div>
+
+
+<section id="citation">
+<div class="section-card">
+<h3>Citation</h3>
+<pre style="background-color: #f5f5f5; padding: 1em; border-left: 4px solid #ccc; font-family: 'Courier New', monospace; font-size: 0.95em; overflow-x: auto;">
+@article{zhang2025activation,
+    title={Activation Approximations Can Incur Safety Vulnerabilities Even in Aligned LLMs: Comprehensive Analysis and Defense},
+    author={Zhang, Jiawen and Chen, Kejia and He, Lipeng and Lou, Jian and Li, Dan and Feng, Zunlei and Song, Mingli and Liu, Jian and Ren, Kui and Yang, Xiaohu},
+    journal={arXiv preprint arXiv:2502.00840},
+    year={2025}
+}
+</pre>
+</div>
+</section>
+
+
+<!-- <div class="links-row">
+    <a href="https://github.com/Kevin-Zh-CS/QuadA" target="_blank" class="btn">GitHub</a>
+    <a href="https://arxiv.org/pdf/2502.00840" target="_blank" class="btn">Paper</a>
+</div> -->
+    <!-- Additional Sections (Taxonomy, QuadA, Results, Citation) remain unchanged but follow same style -->
+
+    <footer>
+      &copy; 2025 QuadA Project
+    </footer>
+  </div>
+</body>
+
+</html>
