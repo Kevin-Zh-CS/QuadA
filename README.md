@@ -1,4 +1,5 @@
 # QuadA Safety Evaluation & Alignment Suite
+[[`📕 Paper`](https://arxiv.org/pdf/2502.00840)] [[`🛡️ Homepage`](https://kevin-zh-cs.github.io/QuadA/)]
 
 In this software suite, we provide two bash scripts to support the reproduction of the results obtained in our paper:
 
